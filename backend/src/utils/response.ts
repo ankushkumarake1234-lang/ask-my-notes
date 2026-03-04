@@ -49,7 +49,7 @@ export const callLLM = async (prompt: string, context: string, level: string = "
     if (geminiKey) {
       // Use gemini-2.5-flash (quota is still available here)
       const response = await axios.post(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`,
         {
           contents: [
             {
@@ -155,7 +155,7 @@ Rules:
     if (geminiKey) {
       console.log("Using Gemini for MCQ generation...");
       const response = await axios.post(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`,
         {
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
