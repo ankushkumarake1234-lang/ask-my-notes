@@ -18,6 +18,8 @@ export const apiCall = async <T = any>(
 
   const defaultHeaders: Record<string, string> = {
     "Content-Type": "application/json",
+    "Bypass-Tunnel-Reminder": "true",
+    "bypass-tunnel-reminder": "true",
     ...headers,
   };
 

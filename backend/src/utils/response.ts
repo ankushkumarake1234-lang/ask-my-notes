@@ -139,7 +139,8 @@ Rules:
 
       const raw = resp.data?.choices?.[0]?.message?.content || "[]";
       console.log("OpenAI response received, parsing JSON...");
-      return JSON.parse(raw.trim());
+      const cleaned = raw.trim().replace(/^```json?\n?/, "").replace(/\n?```$/, "");
+      return JSON.parse(cleaned);
     }
 
     if (geminiKey) {
