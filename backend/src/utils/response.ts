@@ -122,25 +122,34 @@ Rules:
 
   try {
     if (openaiKey) {
-      console.log("Using OpenAI for MCQ generation...");
-      const resp = await axios.post(
-        "https://api.openai.com/v1/chat/completions",
-        {
-          model: "gpt-4o-mini",
-          messages: [
-            { role: "system", content: "You are an exam question generator. Return only valid JSON." },
-            { role: "user", content: prompt },
-          ],
-          max_tokens: 2000,
-          temperature: 0.5,
-        },
-        { headers: { Authorization: `Bearer ${openaiKey}` } }
-      );
+      try {
+        console.log("Using OpenAI for MCQ generation...");
+        const resp = await axios.post(
+          "https://api.openai.com/v1/chat/completions",
+          {
+            model: "gpt-4o-mini",
+            messages: [
+              { role: "system", content: "You are an exam question generator. Return only valid JSON." },
+              { role: "user", content: prompt },
+            ],
+            max_tokens: 2000,
+            temperature: 0.5,
+          },
+          { headers: { Authorization: `Bearer ${openaiKey}` } }
+        );
 
-      const raw = resp.data?.choices?.[0]?.message?.content || "[]";
-      console.log("OpenAI response received, parsing JSON...");
-      const cleaned = raw.trim().replace(/^```json?\n?/, "").replace(/\n?```$/, "");
-      return JSON.parse(cleaned);
+        const raw = resp.data?.choices?.[0]?.message?.content || "[]";
+        console.log("OpenAI response received, parsing JSON...");
+        const cleaned = raw.trim().replace(/^```json?\n?/, "").replace(/\n?```$/, "");
+        return JSON.parse(cleaned);
+      } catch (err: any) {
+        if (err?.response?.status === 429 && geminiKey) {
+          console.warn("OpenAI rate limit exceeded, falling back to Gemini...");
+          // Continue to Gemini block below
+        } else {
+          throw err;
+        }
+      }
     }
 
     if (geminiKey) {
