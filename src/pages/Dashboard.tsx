@@ -68,6 +68,7 @@ const Dashboard = () => {
   const [chats, setChats] = useState<Chat[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [chatLevel, setChatLevel] = useState("medium");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -189,7 +190,7 @@ const Dashboard = () => {
     setLoading(true);
 
     try {
-      const result = await chatsAPI.ask(activeChat.id, userMessage);
+      const result = await chatsAPI.ask(activeChat.id, userMessage, chatLevel);
       const aiMessage = result.message;
 
       if (!aiMessage) throw new Error("No response from AI");
@@ -648,6 +649,12 @@ const Dashboard = () => {
               )}
 
               <div className="p-4 border-t border-border">
+                <div className="flex gap-2 mb-3 px-2">
+                  <span className="text-xs text-muted-foreground flex items-center">Response Level:</span>
+                  <button onClick={() => setChatLevel("basic")} className={`text-xs px-2 py-1 rounded-md transition-all ${chatLevel === "basic" ? "bg-primary/20 text-primary border border-primary/30" : "text-muted-foreground hover:text-foreground hover:bg-white/5"}`}>Basic</button>
+                  <button onClick={() => setChatLevel("medium")} className={`text-xs px-2 py-1 rounded-md transition-all ${chatLevel === "medium" ? "bg-primary/20 text-primary border border-primary/30" : "text-muted-foreground hover:text-foreground hover:bg-white/5"}`}>Medium</button>
+                  <button onClick={() => setChatLevel("advanced")} className={`text-xs px-2 py-1 rounded-md transition-all ${chatLevel === "advanced" ? "bg-primary/20 text-primary border border-primary/30" : "text-muted-foreground hover:text-foreground hover:bg-white/5"}`}>Advanced</button>
+                </div>
                 <div className="flex items-center gap-3 glass-panel rounded-xl px-4 py-2">
                   <input
                     value={input}
@@ -707,7 +714,7 @@ const Dashboard = () => {
                   setMessages((prev) => [...prev, { role: "user", content: text }]);
                   setLoading(true);
                   try {
-                    const result = await chatsAPI.ask(activeChat.id, text);
+                    const result = await chatsAPI.ask(activeChat.id, text, chatLevel);
                     setMessages((prev) => [...prev, result.message]);
                     if (result.message.content) {
                       speak(result.message.content.replace(/\*\*/g, "").substring(0, 500));
@@ -750,6 +757,7 @@ const StudyModeView = ({
   const [finished, setFinished] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [level, setLevel] = useState("medium");
 
   const loadMCQs = async () => {
     setLoading(true);
@@ -760,7 +768,7 @@ const StudyModeView = ({
     setScore(0);
     setFinished(false);
     try {
-      const result = await chatsAPI.generateMCQ(subjectId, 5);
+      const result = await chatsAPI.generateMCQ(subjectId, 5, level);
       if (result.questions?.length > 0) {
         setQuestions(result.questions);
       } else {
@@ -803,6 +811,28 @@ const StudyModeView = ({
             Generate AI-powered MCQ questions based on your uploaded PDFs.
             Make sure you have uploaded at least one PDF for this subject.
           </p>
+
+          <div className="flex justify-center gap-2 mb-6">
+            <button
+              onClick={() => setLevel("basic")}
+              className={`px-4 py-1.5 rounded-lg text-sm transition-all ${level === "basic" ? "bg-primary text-secondary-foreground" : "bg-sidebar-accent text-muted-foreground hover:text-foreground"}`}
+            >
+              Basic
+            </button>
+            <button
+              onClick={() => setLevel("medium")}
+              className={`px-4 py-1.5 rounded-lg text-sm transition-all ${level === "medium" ? "bg-primary text-secondary-foreground" : "bg-sidebar-accent text-muted-foreground hover:text-foreground"}`}
+            >
+              Medium
+            </button>
+            <button
+              onClick={() => setLevel("advanced")}
+              className={`px-4 py-1.5 rounded-lg text-sm transition-all ${level === "advanced" ? "bg-primary text-secondary-foreground" : "bg-sidebar-accent text-muted-foreground hover:text-foreground"}`}
+            >
+              Advanced
+            </button>
+          </div>
+
           <button
             onClick={loadMCQs}
             className="px-6 py-3 rounded-xl text-sm font-semibold text-secondary-foreground transition-all hover:scale-105"

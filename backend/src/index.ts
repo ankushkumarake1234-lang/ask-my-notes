@@ -50,7 +50,7 @@ app.use(cors({
       return callback(null, true);
     }
     // In production, only allow the configured frontend URL
-    if (origin === FRONTEND_URL) return callback(null, true);
+    if (origin === FRONTEND_URL || origin === "https://ask-my-notes-dashboard.netlify.app") return callback(null, true);
     callback(new Error(`CORS: Origin ${origin} not allowed`));
   },
   credentials: true,

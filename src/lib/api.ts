@@ -120,17 +120,17 @@ export const chatsAPI = {
   getMessages: (chatId: string) =>
     apiCall(`/chats/${chatId}/messages`),
 
-  ask: (chatId: string, question: string) =>
+  ask: (chatId: string, question: string, level: string = "medium") =>
     apiCall(`/chats/${chatId}/ask`, {
       method: "POST",
-      body: { question },
+      body: { question, level },
     }),
 
   delete: (chatId: string) =>
     apiCall(`/chats/${chatId}`, { method: "DELETE" }),
 
-  generateMCQ: (subjectId: string, count: number = 5) =>
-    apiCall(`/chats/mcq/${subjectId}?count=${count}`),
+  generateMCQ: (subjectId: string, count: number = 5, level: string = "medium") =>
+    apiCall(`/chats/mcq/${subjectId}?count=${count}&level=${level}`),
 };
 
 // Helper to save token

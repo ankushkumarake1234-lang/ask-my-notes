@@ -116,7 +116,7 @@ export const askQuestion = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    const { question } = req.body;
+    const { question, level = "medium" } = req.body;
     const chatId = req.params.chatId || req.body.chatId;
 
     if (!chatId || !question) {
@@ -207,7 +207,7 @@ export const askQuestion = async (req: AuthRequest, res: Response) => {
       }
 
       // Call LLM for answer
-      const answer = await callLLM(question, context);
+      const answer = await callLLM(question, context, level);
 
       // Create citations
       const citations = scoredChunks.map(
@@ -286,6 +286,7 @@ export const generateMCQ = async (req: AuthRequest, res: Response) => {
 
     const { subjectId } = req.params;
     const count = Number(req.query.count) || 5;
+    const level = (req.query.level as string) || "medium";
 
     // Verify subject ownership
     const subject = await prisma.subject.findFirst({
@@ -315,7 +316,7 @@ export const generateMCQ = async (req: AuthRequest, res: Response) => {
     const context = chunks.map((c) => c.text).join("\n\n");
 
     // Generate MCQs
-    const questions = await generateMCQFromContext(context, count);
+    const questions = await generateMCQFromContext(context, count, level);
 
     if (!questions || questions.length === 0) {
       return res.status(500).json({

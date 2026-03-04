@@ -17,7 +17,7 @@ export const errorResponse = (error: string): ApiResponse<null> => ({
 });
 
 // Call OpenAI or Gemini API for AI responses
-export const callLLM = async (prompt: string, context: string): Promise<string> => {
+export const callLLM = async (prompt: string, context: string, level: string = "medium"): Promise<string> => {
   try {
     const openaiKey = process.env.OPENAI_API_KEY;
     const geminiKey = process.env.GEMINI_API_KEY;
@@ -26,7 +26,7 @@ export const callLLM = async (prompt: string, context: string): Promise<string> 
       return "I couldn't generate an answer. Please configure an AI API key (GEMINI_API_KEY or OPENAI_API_KEY) in your environment.";
     }
 
-    const instruction = `Context from uploaded documents:\n\n${context}\n\nUser question: ${prompt}\n\nBased ONLY on the context provided above, answer the question in YOUR OWN WORDS. Do NOT copy text verbatim from the documents. Instead:\n1. Understand the information from the context\n2. Rephrase it naturally and clearly as if explaining to someone\n3. Provide a concise, accurate answer without directly quoting the source\n4. If the answer is not found in the context, respond with "Answer not found in the uploaded documents."`;
+    const instruction = `Context from uploaded documents:\n\n${context}\n\nUser question: ${prompt}\n\nBased ONLY on the context provided above, answer the question in YOUR OWN WORDS. Do NOT copy text verbatim from the documents. Instead:\n1. Understand the information from the context\n2. Rephrase it naturally and clearly as if explaining to someone at a ${level.toUpperCase()} difficulty level.\n3. Provide a concise, accurate answer without directly quoting the source\n4. If the answer is not found in the context, respond with "Answer not found in the uploaded documents."`;
 
     if (openaiKey) {
       const resp = await axios.post(
@@ -84,7 +84,8 @@ export interface MCQQuestion {
 // Generate MCQ questions from PDF context using AI
 export const generateMCQFromContext = async (
   context: string,
-  count: number = 5
+  count: number = 5,
+  level: string = "medium"
 ): Promise<MCQQuestion[]> => {
   const openaiKey = process.env.OPENAI_API_KEY;
   const geminiKey = process.env.GEMINI_API_KEY;
@@ -98,7 +99,7 @@ export const generateMCQFromContext = async (
     throw new Error("No AI API key configured. Please set GEMINI_API_KEY or OPENAI_API_KEY in your environment.");
   }
 
-  const prompt = `Based on the following study material, generate exactly ${count} multiple choice questions (MCQs) to test knowledge.
+  const prompt = `Based on the following study material, generate exactly ${count} multiple choice questions (MCQs) of ${level.toUpperCase()} difficulty to test knowledge.
 
 Study material:
 ${context.substring(0, 6000)}
