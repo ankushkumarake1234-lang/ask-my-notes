@@ -1,0 +1,17 @@
+node_modules
+dist
+.env
+.env.local
+.env.*.local
+*.log
+*.pid
+*.seed
+*.pid.lock
+.DS_Store
+uploads/*
+!uploads/.gitkeep
+.idea
+.vscode
+*.swp
+*.swo
+*~

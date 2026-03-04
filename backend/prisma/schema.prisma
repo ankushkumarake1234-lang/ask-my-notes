@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String    @id @default(cuid())
+  firebaseId  String    @unique
+  email       String    @unique
+  displayName String?
+  photoUrl    String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  chats       Chat[]
+  subjects    Subject[]
+
+  @@index([email])
+  @@index([firebaseId])
+}
+
+model Subject {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  chats       Chat[]
+  pdfs        PDF[]
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+model PDF {
+  id               String     @id @default(cuid())
+  subjectId        String
+  userId           String
+  fileName         String
+  originalFileName String
+  fileSize         Int
+  fileUrl          String
+  extractedText    String?
+  pageCount        Int        @default(0)
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  subject          Subject    @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  chunks           PDFChunk[]
+  messages         Message[]  @relation("PDFMessages")
+
+  @@index([subjectId])
+  @@index([userId])
+}
+
+model PDFChunk {
+  id         String   @id @default(cuid())
+  pdfId      String
+  chunkIndex Int
+  text       String
+  tokens     Int
+  embedding  Json?
+  pageNumber Int?
+  createdAt  DateTime @default(now())
+  pdf        PDF      @relation(fields: [pdfId], references: [id], onDelete: Cascade)
+
+  @@index([pdfId])
+}
+
+model Chat {
+  id        String    @id @default(cuid())
+  userId    String
+  subjectId String
+  title     String    @default("New Chat")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  subject   Subject   @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  Message[]
+
+  @@index([userId])
+  @@index([subjectId])
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  chatId    String
+  role      String
+  content   String
+  citations String?
+  pdfIds    String?
+  createdAt DateTime @default(now())
+  chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  pdfs      PDF[]    @relation("PDFMessages")
+
+  @@index([chatId])
+}
