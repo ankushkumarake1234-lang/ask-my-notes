@@ -133,6 +133,16 @@ export const chatsAPI = {
 
   generateMCQ: (subjectId: string, count: number = 5, level: string = "medium") =>
     apiCall(`/chats/mcq/${subjectId}?count=${count}&level=${level}`),
+
+  transcribe: (audioBlob: Blob) => {
+    const formData = new FormData();
+    formData.append("audio", audioBlob, "audio.webm");
+    return apiCall("/chats/transcribe", {
+      method: "POST",
+      body: formData,
+      headers: {},
+    });
+  },
 };
 
 // Helper to save token

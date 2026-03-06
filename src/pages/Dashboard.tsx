@@ -221,11 +221,11 @@ const Dashboard = () => {
     }
   };
 
-  const handleVoiceInput = () => {
+  const handleVoiceInput = async () => {
     if (isListening) {
-      stopListening();
-      if (transcript.trim()) {
-        setInput(transcript);
+      const recordedText = await stopListening();
+      if (recordedText.trim()) {
+        setInput(recordedText);
         resetTranscript();
       }
     } else {
@@ -657,12 +657,12 @@ const Dashboard = () => {
                 </div>
                 <div className="flex items-center gap-3 glass-panel rounded-xl px-4 py-2">
                   <input
-                    value={input}
+                    value={isListening ? "" : input}
                     onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && !loading && handleSend()}
-                    placeholder={`Ask about ${currentSubject?.name || "your notes"}...`}
+                    onKeyDown={(e) => e.key === "Enter" && !loading && !isListening && handleSend()}
+                    placeholder={isListening ? "Recording voice... Please wait" : `Ask about ${currentSubject?.name || "your notes"}...`}
                     className="flex-1 bg-transparent text-foreground text-sm focus:outline-none placeholder:text-muted-foreground"
-                    disabled={!activeChat || loading}
+                    disabled={!activeChat || loading || isListening}
                   />
                   <button
                     onClick={handleVoiceInput}
@@ -1009,16 +1009,16 @@ const VoiceModeView = ({
   isListening: boolean;
   transcript: string;
   onStart: () => void;
-  onStop: () => void;
+  onStop: () => Promise<string | void>;
   activeChat: any;
   onSendVoiceMessage: (text: string) => void;
 }) => {
   const [pendingText, setPendingText] = useState("");
 
-  const handleStop = () => {
-    onStop();
-    if (transcript.trim()) {
-      setPendingText(transcript.trim());
+  const handleStop = async () => {
+    const recordedText = await onStop();
+    if (recordedText && recordedText.trim()) {
+      setPendingText(recordedText.trim());
     }
   };
 
@@ -1147,6 +1147,33 @@ const ProfileView = ({
     { label: "Chats", value: chats.length, icon: MessageSquare, color: "text-purple-400", bg: "bg-purple-500/10 border-purple-500/20" },
   ];
 
+  const [localPhoto, setLocalPhoto] = useState<string | null>(localStorage.getItem("user_avatar"));
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("Image must be smaller than 5MB");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setLocalPhoto(base64String);
+        localStorage.setItem("user_avatar", base64String);
+        toast.success("Profile photo updated successfully!");
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemovePhoto = () => {
+    setLocalPhoto(null);
+    localStorage.removeItem("user_avatar");
+    toast.success("Profile photo removed!");
+  };
+
   return (
     <div className="flex-1 overflow-y-auto p-6 md:p-10">
       <div className="max-w-2xl mx-auto space-y-6">
@@ -1158,19 +1185,43 @@ const ProfileView = ({
           className="glass-panel rounded-2xl p-8 border border-white/10 text-center"
         >
           {/* Avatar */}
-          <div className="flex justify-center mb-5">
-            {user?.photoURL ? (
-              <img
-                src={user.photoURL}
-                alt="Profile"
-                className="w-24 h-24 rounded-full object-cover ring-4 ring-primary/30 shadow-lg"
-              />
-            ) : (
-              <div className="w-24 h-24 rounded-full bg-primary/20 border-2 border-primary/30 flex items-center justify-center shadow-lg">
-                <span className="text-primary text-4xl font-bold">
-                  {(user?.displayName || user?.email || "U")[0].toUpperCase()}
-                </span>
+          <div className="flex flex-col items-center justify-center mb-5 relative group">
+            <div className="relative group/avatar cursor-pointer rounded-full" onClick={() => fileInputRef.current?.click()}>
+              {localPhoto || user?.photoURL ? (
+                <img
+                  src={localPhoto || user.photoURL}
+                  alt="Profile"
+                  className="w-24 h-24 rounded-full object-cover ring-4 ring-primary/30 shadow-lg"
+                />
+              ) : (
+                <div className="w-24 h-24 rounded-full bg-primary/20 border-2 border-primary/30 flex items-center justify-center shadow-lg">
+                  <span className="text-primary text-4xl font-bold">
+                    {(user?.displayName || user?.email || "U")[0].toUpperCase()}
+                  </span>
+                </div>
+              )}
+
+              <div className="absolute inset-0 bg-black/60 rounded-full flex flex-col items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity backdrop-blur-[1px]">
+                <Upload className="w-6 h-6 text-white mb-1" />
+                <span className="text-[10px] text-white font-medium">Upload</span>
               </div>
+            </div>
+
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
+              accept="image/*"
+              onChange={handlePhotoUpload}
+            />
+
+            {(localPhoto || user?.photoURL) && (
+              <button
+                onClick={handleRemovePhoto}
+                className="mt-4 text-xs font-medium text-red-400 hover:text-red-300 transition-colors flex items-center gap-1.5 bg-red-500/10 hover:bg-red-500/20 px-4 py-1.5 rounded-full border border-red-500/20 hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Remove Photo
+              </button>
             )}
           </div>
 

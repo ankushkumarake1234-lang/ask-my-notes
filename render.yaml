@@ -1,0 +1,21 @@
+services:
+  # Backend Web Service
+  - type: web
+    name: askmynotes-backend
+    env: node
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: DATABASE_URL
+        value: postgresql://ankushkumar@localhost:5432/askmynotes # Note: Update this to a real hosted DB
+      - key: PORT
+        value: 3001
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        value: https://your-netlify-url.netlify.app # Note: Update this after Netlify deploy
+      - key: GEMINI_API_KEY
+        sync: false # Add this manually in Render dashboard

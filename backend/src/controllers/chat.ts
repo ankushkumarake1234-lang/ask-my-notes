@@ -3,6 +3,7 @@ import { AuthRequest } from "@/middleware/auth";
 import prisma from "@/lib/prisma";
 import { generateEmbedding, calculateSimilarity } from "@/utils/pdf";
 import { callLLM, generateMCQFromContext } from "@/utils/response";
+import axios from "axios";
 
 export const getChats = async (req: AuthRequest, res: Response) => {
   try {
@@ -328,6 +329,97 @@ export const generateMCQ = async (req: AuthRequest, res: Response) => {
   } catch (err: any) {
     console.error("MCQ generation error:", err);
     res.status(500).json({ error: err.message });
+  }
+};
+
+export const transcribeAudio = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const file = (req as any).file;
+    if (!file) {
+      return res.status(400).json({ error: "No audio file provided" });
+    }
+
+    const groqKey = process.env.GROQ_API_KEY;
+    const geminiKey = process.env.GEMINI_API_KEY;
+
+    if (!groqKey && !geminiKey) {
+      return res.status(500).json({ error: "No AI API key (GROQ_API_KEY or GEMINI_API_KEY) is configured" });
+    }
+
+    if (groqKey) {
+      try {
+        const formData = new FormData();
+        const blob = new Blob([file.buffer], { type: file.mimetype });
+        formData.append("file", blob, "audio.webm");
+        formData.append("model", "whisper-large-v3-turbo");
+
+        const response = await axios.post("https://api.groq.com/openai/v1/audio/transcriptions", formData, {
+          headers: {
+            Authorization: `Bearer ${groqKey}`
+          }
+        });
+
+        let text = response.data?.text || "";
+        return res.json({ success: true, text: text.trim() });
+      } catch (err: any) {
+        if (err?.response?.status === 429 && geminiKey) {
+          console.warn("Groq rate limit exceeded for audio transcription, falling back to Gemini...");
+          // Fall through to Gemini block below
+        } else {
+          throw err;
+        }
+      }
+    }
+
+    if (geminiKey) {
+      const modelsToTry = ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-2.5-flash", "gemini-2.5-flash-lite"];
+      let lastError: any;
+
+      for (const model of modelsToTry) {
+        try {
+          console.log(`Using Gemini (${model}) for audio transcription...`);
+          const response = await axios.post(
+            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
+            {
+              contents: [
+                {
+                  parts: [
+                    { text: "Accurately transcribe the following audio into text. Return ONLY the transcribed text without any extra comments, markdown, or greetings. If you are unsure, just write what you think it says." },
+                    {
+                      inlineData: {
+                        mimeType: file.mimetype,
+                        data: file.buffer.toString("base64")
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          );
+          let text = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+          return res.json({ success: true, text: text.trim() });
+        } catch (err: any) {
+          lastError = err;
+          if (err?.response?.status === 429) {
+            console.warn(`[Transcription] Rate limit hit on ${model}, falling back to next model...`);
+            continue;
+          }
+          throw err;
+        }
+      }
+      throw lastError;
+    }
+
+  } catch (err: any) {
+    if (err?.response?.status === 429) {
+      return res.status(429).json({ error: "AI API rate limit exceeded. Please wait a minute and try again." });
+    }
+    console.error("Transcribe error:", err?.response?.data || err.message);
+    res.status(500).json({ error: err.message || "Failed to transcribe audio" });
   }
 };
 

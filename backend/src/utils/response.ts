@@ -21,12 +21,31 @@ export const callLLM = async (prompt: string, context: string, level: string = "
   try {
     const openaiKey = process.env.OPENAI_API_KEY;
     const geminiKey = process.env.GEMINI_API_KEY;
+    const groqKey = process.env.GROQ_API_KEY;
 
-    if (!openaiKey && !geminiKey) {
-      return "I couldn't generate an answer. Please configure an AI API key (GEMINI_API_KEY or OPENAI_API_KEY) in your environment.";
+    if (!openaiKey && !geminiKey && !groqKey) {
+      return "I couldn't generate an answer. Please configure an AI API key (GROQ_API_KEY, GEMINI_API_KEY or OPENAI_API_KEY) in your environment.";
     }
 
     const instruction = `Context from uploaded documents:\n\n${context}\n\nUser question: ${prompt}\n\nBased ONLY on the context provided above, answer the question in YOUR OWN WORDS. Do NOT copy text verbatim from the documents. Instead:\n1. Understand the information from the context\n2. Rephrase it naturally and clearly as if explaining to someone at a ${level.toUpperCase()} difficulty level.\n3. Provide a concise, accurate answer without directly quoting the source\n4. If the answer is not found in the context, respond with "Answer not found in the uploaded documents."`;
+
+    if (groqKey) {
+      const resp = await axios.post(
+        "https://api.groq.com/openai/v1/chat/completions",
+        {
+          model: "llama-3.3-70b-versatile",
+          messages: [
+            { role: "system", content: "You answer questions strictly using provided context. Do not hallucinate." },
+            { role: "user", content: instruction },
+          ],
+          max_tokens: 2000,
+        },
+        { headers: { Authorization: `Bearer ${groqKey}` } }
+      );
+
+      const text = resp.data?.choices?.[0]?.message?.content;
+      if (text) return text;
+    }
 
     if (openaiKey) {
       const resp = await axios.post(
@@ -47,28 +66,47 @@ export const callLLM = async (prompt: string, context: string, level: string = "
     }
 
     if (geminiKey) {
-      // Use gemini-2.5-flash (quota is still available here)
-      const response = await axios.post(
-        `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent?key=${geminiKey}`,
-        {
-          contents: [
-            {
-              parts: [{ text: instruction }],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.3,
-            maxOutputTokens: 800,
-          },
-        }
-      );
+      const modelsToTry = ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-2.5-flash", "gemini-2.5-flash-lite"];
+      let lastError: any;
 
-      const text = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (text) return text;
+      for (const model of modelsToTry) {
+        try {
+          const response = await axios.post(
+            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
+            {
+              contents: [
+                {
+                  parts: [{ text: instruction }],
+                },
+              ],
+              generationConfig: {
+                temperature: 0.3,
+                maxOutputTokens: 8000,
+              },
+            }
+          );
+
+          const text = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text) return text;
+        } catch (err: any) {
+          lastError = err;
+          if (err?.response?.status === 429) {
+            console.warn(`[callLLM] Rate limit hit on ${model}, falling back to next model...`);
+            continue;
+          }
+          // If not a rate limit, break and throw
+          throw err;
+        }
+      }
+      // If all models hit 429
+      throw lastError;
     }
 
     return "Could not generate a response. Please try again.";
   } catch (err: any) {
+    if (err?.response?.status === 429) {
+      return "The AI API rate limit has been exceeded across all fallback models. Please wait 1 minute and try asking again.";
+    }
     console.error("LLM API error:", err?.response?.data || err.message);
     return "Error generating response from AI. Please check your API configuration.";
   }
@@ -89,14 +127,16 @@ export const generateMCQFromContext = async (
 ): Promise<MCQQuestion[]> => {
   const openaiKey = process.env.OPENAI_API_KEY;
   const geminiKey = process.env.GEMINI_API_KEY;
+  const groqKey = process.env.GROQ_API_KEY;
 
   console.log("MCQ Generation - API Keys check:");
+  console.log("  Groq key present:", !!groqKey);
   console.log("  OpenAI key present:", !!openaiKey);
   console.log("  Gemini key present:", !!geminiKey);
 
-  if (!openaiKey && !geminiKey) {
-    console.error("No API keys configured. Set GEMINI_API_KEY or OPENAI_API_KEY in backend/.env");
-    throw new Error("No AI API key configured. Please set GEMINI_API_KEY or OPENAI_API_KEY in your environment.");
+  if (!openaiKey && !geminiKey && !groqKey) {
+    console.error("No API keys configured. Set GROQ_API_KEY, GEMINI_API_KEY or OPENAI_API_KEY in backend/.env");
+    throw new Error("No AI API key configured. Please set GROQ_API_KEY in your environment.");
   }
 
   const prompt = `Based on the following study material, generate exactly ${count} multiple choice questions (MCQs) of ${level.toUpperCase()} difficulty to test knowledge.
@@ -121,6 +161,41 @@ Rules:
 - Return only the JSON array, nothing else`;
 
   try {
+    if (groqKey) {
+      try {
+        console.log("Using Groq for MCQ generation...");
+        const resp = await axios.post(
+          "https://api.groq.com/openai/v1/chat/completions",
+          {
+            model: "llama-3.3-70b-versatile",
+            messages: [
+              { role: "system", content: "You are an exam question generator. Return only valid JSON." },
+              { role: "user", content: prompt },
+            ],
+            max_tokens: 4000,
+            temperature: 0.5,
+          },
+          { headers: { Authorization: `Bearer ${groqKey}` } }
+        );
+
+        const raw = resp.data?.choices?.[0]?.message?.content || "[]";
+        console.log("Groq response received, parsing JSON...");
+        const cleaned = raw.trim().replace(/^```json?\n?/, "").replace(/\n?```$/, "");
+        return JSON.parse(cleaned);
+      } catch (err: any) {
+        if (err?.response?.status === 429 && (openaiKey || geminiKey)) {
+          console.warn("Groq rate limit exceeded, falling back...");
+        } else {
+          try {
+            const raw = err.response?.data?.choices?.[0]?.message?.content || "[]";
+            const match = raw.match(/\[[\s\S]*\]/);
+            if (match) return JSON.parse(match[0]);
+          } catch (e) { }
+          throw err;
+        }
+      }
+    }
+
     if (openaiKey) {
       try {
         console.log("Using OpenAI for MCQ generation...");
@@ -153,35 +228,46 @@ Rules:
     }
 
     if (geminiKey) {
-      console.log("Using Gemini for MCQ generation...");
-      const response = await axios.post(
-        `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent?key=${geminiKey}`,
-        {
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.5,
-            maxOutputTokens: 2000,
-            responseMimeType: "application/json",
-          },
-        }
-      );
+      const modelsToTry = ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-2.5-flash", "gemini-2.5-flash-lite"];
+      let lastError: any;
 
-      const raw =
-        response.data?.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
-      console.log("Gemini response received, raw text:", raw.substring(0, 200));
+      for (const model of modelsToTry) {
+        try {
+          console.log(`Using Gemini (${model}) for MCQ generation...`);
+          const response = await axios.post(
+            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
+            {
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: {
+                temperature: 0.5,
+                maxOutputTokens: 8000,
+                responseMimeType: "application/json",
+              },
+            }
+          );
 
-      // Strip markdown code fences if present and try parsing
-      try {
-        const cleaned = raw.trim().replace(/^```json?\n?/, "").replace(/\n?```$/, "");
-        return JSON.parse(cleaned);
-      } catch (e) {
-        // Deep fallback: forcibly extract from the first [ to the last ]
-        const match = raw.match(/\[[\s\S]*\]/);
-        if (match) {
-          return JSON.parse(match[0]);
+          const raw = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
+
+          try {
+            const cleaned = raw.trim().replace(/^```json?\n?/, "").replace(/\n?```$/, "");
+            return JSON.parse(cleaned);
+          } catch (e) {
+            const match = raw.match(/\[[\s\S]*\]/);
+            if (match) {
+              return JSON.parse(match[0]);
+            }
+            throw e;
+          }
+        } catch (err: any) {
+          lastError = err;
+          if (err?.response?.status === 429) {
+            console.warn(`[MCQ] Rate limit hit on ${model}, falling back to next model...`);
+            continue;
+          }
+          throw err;
         }
-        throw e;
       }
+      throw lastError;
     }
   } catch (err: any) {
     console.error("MCQ generation error:", err?.response?.data || err.message);

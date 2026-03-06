@@ -1,4 +1,6 @@
 import { useState, useRef, useCallback } from "react";
+import { chatsAPI } from "@/lib/api";
+import { toast } from "sonner";
 
 // Type definitions for Web Speech API
 interface SpeechRecognitionEvent extends Event {
@@ -19,92 +21,75 @@ declare global {
   }
 }
 
-// Voice Input Hook
+// Voice Input Hook (Custom Backend Transcription Fallback)
 export const useVoiceInput = () => {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const recognitionRef = useRef<any>(null);
 
-  const startListening = useCallback(() => {
-    // Check browser support
-    const SpeechRecognition =
-      window.SpeechRecognition || window.webkitSpeechRecognition;
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<BlobPart[]>([]);
 
-    if (!SpeechRecognition) {
-      setError("Speech Recognition not supported in this browser");
-      return;
-    }
+  const startListening = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
 
-    recognitionRef.current = new SpeechRecognition();
-    recognitionRef.current.continuous = true;
-    recognitionRef.current.interimResults = true;
-    recognitionRef.current.lang = "en-US";
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
 
-    recognitionRef.current.onstart = () => {
+      mediaRecorder.start();
       setIsListening(true);
       setError(null);
-    };
-
-    recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
-      let interim = "";
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const text = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          setTranscript((prev) => prev + text + " ");
-        } else {
-          interim += text;
-        }
-      }
-      // we don't touch DOM directly; consumer of the hook can react to transcript state
-    };
-
-    recognitionRef.current.onerror = (event: SpeechRecognitionErrorEvent) => {
-      // Ignore "aborted" error - it occurs when user manually stops recording
-      // or when the browser stops recognition normally
-      if (event.error === "aborted") {
-        setIsListening(false);
-        return;
-      }
-      
-      // Handle "not-allowed" error (permission denied)
-      if (event.error === "not-allowed") {
+      setTranscript("");
+    } catch (err: any) {
+      if (err.name === "NotAllowedError" || err?.message?.includes("Permission denied")) {
         setError("Microphone access denied. Please allow microphone permission in your browser settings.");
-        setIsListening(false);
-        return;
+      } else {
+        setError(`Microphone error: ${err?.message || "Unknown error"}`);
       }
-      
-      // Handle "no-speech" error (no speech detected)
-      if (event.error === "no-speech") {
-        setError("No speech detected. Please try speaking again.");
-        setIsListening(false);
-        return;
-      }
-      
-      // Handle "network" error
-      if (event.error === "network") {
-        setError("Network error. Please check your internet connection and try again.");
-        setIsListening(false);
-        return;
-      }
-      
-      // Handle other errors
-      setError(`Microphone error: ${event.error}`);
-      setIsListening(false);
-    };
-
-    recognitionRef.current.onend = () => {
-      setIsListening(false);
-    };
-
-    recognitionRef.current.start();
-  }, []);
-
-  const stopListening = useCallback(() => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
       setIsListening(false);
     }
+  }, []);
+
+  const stopListening = useCallback((): Promise<string> => {
+    return new Promise((resolve) => {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+        const currentRecorder = mediaRecorderRef.current;
+
+        currentRecorder.onstop = async () => {
+          setIsListening(false);
+          const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+          toast.info("Transcribing audio...", { id: "transcribe" });
+
+          try {
+            const res = await chatsAPI.transcribe(audioBlob);
+            const transcribedText = res.text || "";
+            setTranscript(transcribedText);
+            toast.success("Transcription complete!", { id: "transcribe" });
+            resolve(transcribedText);
+          } catch (err: any) {
+            const errorMessage = err.message || "Failed to transcribe audio. Please try again.";
+            setError(errorMessage);
+            toast.error(errorMessage, { id: "transcribe" });
+            resolve("");
+          }
+
+          // Stop all microphone tracks
+          currentRecorder.stream.getTracks().forEach((track) => track.stop());
+        };
+
+        currentRecorder.stop();
+      } else {
+        setIsListening(false);
+        resolve("");
+      }
+    });
   }, []);
 
   const resetTranscript = useCallback(() => {

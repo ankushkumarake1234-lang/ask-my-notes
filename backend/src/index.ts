@@ -18,15 +18,15 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Validate essential environment variables
+// Validate essential environment variables (and apply hot reload)
 if (!process.env.DATABASE_URL) {
   console.warn("⚠️ DATABASE_URL is not set. Please configure your .env file.");
 }
 if (!process.env.JWT_SECRET) {
   console.warn("⚠️ JWT_SECRET is not set. Authentication will fail without it.");
 }
-if (!process.env.OPENAI_API_KEY && !process.env.GEMINI_API_KEY) {
-  console.warn("⚠️ No AI API key found. Question answering will return an error until you set OPENAI_API_KEY or GEMINI_API_KEY.");
+if (!process.env.OPENAI_API_KEY && !process.env.GEMINI_API_KEY && !process.env.GROQ_API_KEY) {
+  console.warn("⚠️ No AI API key found. Question answering will return an error until you set GROQ_API_KEY, OPENAI_API_KEY or GEMINI_API_KEY.");
 }
 
 // ensure uploads directory exists

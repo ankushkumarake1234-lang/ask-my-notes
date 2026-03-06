@@ -69,11 +69,11 @@ export const generateEmbedding = async (text: string): Promise<number[]> => {
     }
 
     if (geminiKey) {
-      // Use Gemini text-embedding-004 (stable embedding model)
+      // Use gemini-embedding-001 (works across more api key tiers)
       const resp = await axios.post(
-        `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${geminiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent?key=${geminiKey}`,
         {
-          model: "models/text-embedding-004",
+          model: "models/gemini-embedding-001",
           content: { parts: [{ text }] },
         }
       );
