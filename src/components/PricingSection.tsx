@@ -23,64 +23,68 @@ const plans = [
 
 const PricingSection = () => {
   return (
-    <section id="pricing" className="py-24 relative z-10">
-      <div className="container mx-auto px-6">
+    <section id="pricing" className="py-32 relative z-10 bg-background border-t border-border">
+      <div className="container mx-auto px-6 max-w-5xl">
+        <div className="mb-10 flex items-center justify-center gap-4">
+          <span className="h-px w-24 bg-border" />
+          <span className="small-caps text-accent">
+            Membership
+          </span>
+          <span className="h-px w-24 bg-border" />
+        </div>
+
         <motion.h2
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          className="font-serif text-3xl md:text-5xl font-bold text-center text-foreground mb-16"
+          className="font-serif text-4xl md:text-5xl font-normal text-center text-foreground mb-16 tracking-tight"
         >
-          Simple{" "}
-          <span className="bg-clip-text text-transparent" style={{ backgroundImage: "var(--gradient-gold)" }}>
-            Pricing
-          </span>
+          Simple <span className="text-accent italic">Pricing</span>
         </motion.h2>
 
-        <div className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
+        <div className="grid md:grid-cols-2 gap-10 max-w-4xl mx-auto">
           {plans.map((plan, i) => (
             <motion.div
               key={plan.name}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: i * 0.15 }}
-              className={`rounded-2xl p-8 ${
+              transition={{ delay: i * 0.15, duration: 0.6, ease: "easeOut" }}
+              className={`rounded-lg p-10 border transition-all duration-300 ${
                 plan.highlighted
-                  ? "glow-border"
-                  : "glass-panel"
+                  ? "border-accent shadow-sm relative bg-card"
+                  : "border-border bg-transparent hover:bg-card hover:shadow-sm"
               }`}
-              style={plan.highlighted ? { background: "var(--glass-bg)" } : undefined}
             >
               {plan.highlighted && (
                 <span
-                  className="inline-block px-3 py-1 rounded-full text-xs font-semibold mb-4 text-accent-foreground"
-                  style={{ background: "var(--gradient-gold)" }}
+                  className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-accent text-accent-foreground text-xs font-semibold uppercase tracking-wider rounded-full shadow-sm"
                 >
                   Most Popular
                 </span>
               )}
-              <h3 className="font-serif text-2xl font-bold text-foreground">{plan.name}</h3>
-              <div className="mt-4 flex items-baseline gap-1">
-                <span className="font-serif text-4xl font-bold text-foreground">{plan.price}</span>
-                <span className="text-muted-foreground text-sm">{plan.period}</span>
+              <h3 className="font-serif text-3xl font-semibold text-foreground">{plan.name}</h3>
+              <div className="mt-4 flex items-baseline gap-2 border-b border-border pb-8">
+                <span className="font-sans text-5xl font-medium text-foreground tracking-tight">{plan.price}</span>
+                <span className="text-muted-foreground text-base">{plan.period}</span>
               </div>
-              <ul className="mt-8 space-y-3">
+              <ul className="mt-8 space-y-4">
                 {plan.features.map((f) => (
-                  <li key={f} className="flex items-center gap-3 text-sm text-muted-foreground">
-                    <Check className="w-4 h-4 text-accent flex-shrink-0" />
+                  <li key={f} className="flex items-center gap-3 text-base text-muted-foreground">
+                    <div className="w-5 h-5 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0">
+                      <Check className="w-3.5 h-3.5 text-accent" strokeWidth={2.5} />
+                    </div>
                     {f}
                   </li>
                 ))}
               </ul>
               <Link
-                to="/dashboard"
-                className="mt-8 block w-full text-center py-3 rounded-xl text-sm font-semibold transition-transform hover:scale-105"
-                style={
+                to={plan.name === "Pro" ? "/checkout" : "/signup"}
+                className={`mt-10 block w-full text-center py-4 rounded-md text-sm font-semibold uppercase tracking-wide transition-all ${
                   plan.highlighted
-                    ? { background: "var(--gradient-primary)", color: "hsl(var(--secondary-foreground))" }
-                    : { background: "hsl(var(--muted))", color: "hsl(var(--foreground))" }
-                }
+                    ? "bg-foreground text-background hover:bg-accent hover:text-accent-foreground hover:shadow-md"
+                    : "bg-muted border border-border text-foreground hover:bg-accent hover:text-accent-foreground hover:border-accent"
+                }`}
               >
                 {plan.cta}
               </Link>

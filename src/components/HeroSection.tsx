@@ -2,70 +2,83 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import logo from "@/assets/logo.png";
 import { Sparkles, Play } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const HeroSection = () => {
   return (
-    <section className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden">
-      <div className="container mx-auto px-6 text-center relative z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
+    <section className="relative min-h-screen flex items-center justify-center pt-24 pb-12 overflow-hidden bg-background">
+      <div className="container mx-auto px-6 max-w-6xl relative z-10">
+        
+        {/* Editorial Top Border/Eyebrow */}
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="flex flex-col items-center"
+          transition={{ duration: 0.6 }}
+          className="flex justify-between items-end border-b border-border pb-4 mb-20"
         >
-          <motion.img
-            src={logo}
-            alt="Ask My Notes"
-            className="w-32 h-32 md:w-40 md:h-40 mb-8"
-            animate={{ y: [0, -10, 0] }}
-            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-          />
-
-          <h1 className="font-serif text-4xl md:text-6xl lg:text-7xl font-bold text-foreground leading-tight max-w-4xl">
-            Turn Your Notes Into a{" "}
-            <span
-              className="bg-clip-text text-transparent"
-              style={{ backgroundImage: "var(--gradient-primary)" }}
-            >
-              Personal AI Teacher
-            </span>
-          </h1>
-
-          <p className="mt-6 text-lg md:text-xl text-muted-foreground max-w-2xl">
-            Ask questions. Get cited answers. Study smarter.
-            Never get lost in your notes again.
-          </p>
-
-          <div className="mt-10 flex flex-col sm:flex-row gap-4">
-            <Link
-              to="/dashboard"
-              className="group px-8 py-3.5 rounded-xl text-base font-semibold text-secondary-foreground flex items-center gap-2 animate-glow-pulse transition-transform hover:scale-105"
-              style={{ background: "var(--gradient-primary)" }}
-            >
-              <Sparkles className="w-5 h-5" />
-              Get Started Free
-            </Link>
-            <button className="px-8 py-3.5 rounded-xl text-base font-semibold text-foreground glass-panel flex items-center gap-2 hover:border-secondary/50 transition-all">
-              <Play className="w-5 h-5 text-accent" />
-              Watch Demo
-            </button>
-          </div>
-
-          <div className="mt-16 flex items-center gap-6 text-muted-foreground text-sm">
-            <span className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-accent" />
-              No hallucinations
-            </span>
-            <span className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-secondary" />
-              Cited answers only
-            </span>
-            <span className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-primary" />
-              Your notes, your AI
-            </span>
-          </div>
+          <div className="small-caps text-muted-foreground">Vol. I — The Pursuit of Knowledge</div>
+          <div className="small-caps text-muted-foreground hidden sm:block">Ask My Notes — Est. 2024</div>
         </motion.div>
+
+        <div className="grid md:grid-cols-[1fr_auto_1fr] gap-8 md:gap-12 items-center">
+          
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+            className="flex flex-col items-center md:items-start text-center md:text-left"
+          >
+            <h1 className="font-serif text-6xl md:text-8xl font-normal text-foreground leading-[1.1] tracking-tight">
+              Master Your <span className="italic text-accent">Studies</span>
+            </h1>
+            <p className="mt-8 text-lg md:text-xl text-muted-foreground max-w-md leading-relaxed">
+              Transform static documents into an interactive intellect. Ask questions, receive cited answers, and embrace absolute clarity.
+            </p>
+
+            <div className="mt-12 flex flex-col sm:flex-row gap-6 w-full sm:w-auto">
+              <Button asChild size="lg" className="px-8 h-12 text-base rounded-md">
+                <Link to="/dashboard">
+                  <Sparkles className="mr-2 h-4 w-4" /> Begin Journey
+                </Link>
+              </Button>
+              <Button asChild variant="outline" size="lg" className="px-8 h-12 text-base rounded-md">
+                <button>
+                  <Play className="mr-2 h-4 w-4" /> Watch Demo
+                </button>
+              </Button>
+            </div>
+            
+            <div className="mt-12 pt-8 border-t border-border w-full grid grid-cols-2 gap-4 text-sm small-caps text-muted-foreground">
+              <div>— No Hallucinations</div>
+              <div>— Cited Sources Only</div>
+              <div>— Enterprise Security</div>
+              <div>— Infinite Recall</div>
+            </div>
+          </motion.div>
+
+          {/* Center Divider Line */}
+          <div className="hidden md:block w-px h-[60vh] bg-border mx-auto" />
+
+          {/* Right Image/Logo Element */}
+          <motion.div
+             initial={{ opacity: 0, scale: 0.95 }}
+             animate={{ opacity: 1, scale: 1 }}
+             transition={{ duration: 1, delay: 0.4, ease: "easeOut" }}
+             className="relative flex justify-center items-center p-8 lg:p-16 border border-border bg-card rounded-lg shadow-sm"
+          >
+            <div className="absolute top-4 left-4 w-4 h-4 border-t border-l border-accent" />
+            <div className="absolute top-4 right-4 w-4 h-4 border-t border-r border-accent" />
+            <div className="absolute bottom-4 left-4 w-4 h-4 border-b border-l border-accent" />
+            <div className="absolute bottom-4 right-4 w-4 h-4 border-b border-r border-accent" />
+            
+            <img
+              src={logo}
+              alt="Ask My Notes Emblem"
+              className="w-48 h-48 md:w-64 md:h-64 object-contain filter grayscale contrast-125 opacity-90 mix-blend-multiply"
+            />
+          </motion.div>
+
+        </div>
       </div>
     </section>
   );

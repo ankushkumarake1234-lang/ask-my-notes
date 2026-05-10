@@ -145,6 +145,17 @@ export const chatsAPI = {
   },
 };
 
+// Payments API
+export const paymentsAPI = {
+  createCheckoutSession: (priceId: string) =>
+    apiCall("/payment/create-checkout-session", {
+      method: "POST",
+      body: { priceId },
+    }),
+
+  getStatus: () => apiCall("/payment/status"),
+};
+
 // Helper to save token
 export const saveToken = (token: string) => {
   localStorage.setItem("auth_token", token);

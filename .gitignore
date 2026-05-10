@@ -24,4 +24,6 @@ dist-ssr
 *.sw?
 
 # Local Netlify folder
-.netlify
+.netlify# Neurcode session history (allow config.json to be committed)
+.neurcode/*
+!.neurcode/config.json

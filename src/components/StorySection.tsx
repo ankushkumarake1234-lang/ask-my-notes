@@ -30,36 +30,44 @@ const stories = [
 
 const StorySection = () => {
   return (
-    <section id="how-it-works" className="py-24 relative z-10">
-      <div className="container mx-auto px-6">
+    <section id="how-it-works" className="py-32 relative z-10 bg-muted">
+      <div className="container mx-auto px-6 max-w-5xl">
+        <div className="mb-10 flex items-center gap-4">
+          <span className="h-px w-12 bg-border" />
+          <span className="small-caps text-accent">
+            The Philosophy
+          </span>
+        </div>
+
         <motion.h2
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          className="font-serif text-3xl md:text-5xl font-bold text-center text-foreground mb-16"
+          className="font-serif text-4xl md:text-5xl font-normal text-foreground mb-16 tracking-tight"
         >
-          How the{" "}
-          <span className="bg-clip-text text-transparent" style={{ backgroundImage: "var(--gradient-primary)" }}>
-            Magic
-          </span>{" "}
-          Works
+          How the <span className="text-accent italic">Magic</span> Works
         </motion.h2>
 
-        <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+        <div className="grid md:grid-cols-[1.3fr_0.7fr] gap-12">
           {stories.map((story, i) => (
             <motion.div
               key={story.title}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: i * 0.15 }}
-              className="glass-panel rounded-2xl p-8 hover:border-secondary/30 transition-all group"
+              transition={{ delay: i * 0.15, duration: 0.6, ease: "easeOut" }}
+              className="bg-card rounded-lg p-10 shadow-sm border border-border flex flex-col group relative overflow-hidden transition-all duration-300 hover:shadow-md hover:bg-background"
             >
-              <story.icon className={`w-10 h-10 ${story.color} mb-4 group-hover:scale-110 transition-transform`} />
-              <h3 className="font-serif text-2xl font-bold text-foreground mb-3">
-                {story.title}
-              </h3>
-              <p className="text-muted-foreground leading-relaxed">
+              <div className="absolute top-0 left-0 w-full h-1 bg-border group-hover:bg-accent transition-colors duration-300" />
+              <div className="flex items-center gap-4 mb-6">
+                <div className="p-3 bg-muted rounded-md text-foreground group-hover:text-accent transition-colors duration-300">
+                  <story.icon className="w-6 h-6" strokeWidth={1.5} />
+                </div>
+                <h3 className="font-serif text-2xl font-semibold text-foreground">
+                  {story.title}
+                </h3>
+              </div>
+              <p className="text-muted-foreground leading-relaxed text-lg">
                 {story.description}
               </p>
             </motion.div>

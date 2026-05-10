@@ -12,8 +12,12 @@ export default {
     },
     extend: {
       fontFamily: {
-        serif: ["'Playfair Display'", "serif"],
-        sans: ["'Inter'", "sans-serif"],
+        serif: ["'Playfair Display'", "Georgia", "serif"],
+        sans: ["'Source Sans 3'", "system-ui", "sans-serif"],
+        mono: ["'IBM Plex Mono'", "monospace"],
+      },
+      transitionTimingFunction: {
+        'md': 'cubic-bezier(0.2, 0, 0, 1)',
       },
       colors: {
         border: "hsl(var(--border))",

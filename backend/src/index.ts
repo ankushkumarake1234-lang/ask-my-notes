@@ -11,6 +11,7 @@ import authRoutes from "@/routes/auth";
 import subjectRoutes from "@/routes/subject";
 import pdfRoutes from "@/routes/pdf";
 import chatRoutes from "@/routes/chat";
+import paymentRoutes from "@/routes/payment";
 
 dotenv.config();
 
@@ -79,6 +80,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/subjects", subjectRoutes);
 app.use("/api/pdfs", pdfRoutes);
 app.use("/api/chats", chatRoutes);
+app.use("/api/payment", paymentRoutes);
 
 // 404 handler
 app.use((req: Request, res: Response) => {
