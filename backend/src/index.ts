@@ -11,7 +11,6 @@ import authRoutes from "@/routes/auth";
 import subjectRoutes from "@/routes/subject";
 import pdfRoutes from "@/routes/pdf";
 import chatRoutes from "@/routes/chat";
-import paymentRoutes from "@/routes/payment";
 
 dotenv.config();
 
@@ -19,15 +18,15 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Validate essential environment variables (and apply hot reload)
+// Validate essential environment variables
 if (!process.env.DATABASE_URL) {
   console.warn("⚠️ DATABASE_URL is not set. Please configure your .env file.");
 }
 if (!process.env.JWT_SECRET) {
   console.warn("⚠️ JWT_SECRET is not set. Authentication will fail without it.");
 }
-if (!process.env.OPENAI_API_KEY && !process.env.GEMINI_API_KEY && !process.env.GROQ_API_KEY) {
-  console.warn("⚠️ No AI API key found. Question answering will return an error until you set GROQ_API_KEY, OPENAI_API_KEY or GEMINI_API_KEY.");
+if (!process.env.OPENAI_API_KEY && !process.env.GEMINI_API_KEY) {
+  console.warn("⚠️ No AI API key found. Question answering will return an error until you set OPENAI_API_KEY or GEMINI_API_KEY.");
 }
 
 // ensure uploads directory exists
@@ -41,22 +40,11 @@ const PORT = process.env.PORT || 3001;
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
 // Middleware
-const isDev = process.env.NODE_ENV !== "production";
 app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (curl, Postman, server-to-server)
-    if (!origin) return callback(null, true);
-    // In development, allow any localhost port
-    if (isDev && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
-      return callback(null, true);
-    }
-    // In production, only allow the configured frontend URL
-    if (origin === FRONTEND_URL || origin === "https://ask-my-notes-dashboard.netlify.app") return callback(null, true);
-    callback(new Error(`CORS: Origin ${origin} not allowed`));
-  },
+  origin: FRONTEND_URL,
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "Bypass-Tunnel-Reminder", "bypass-tunnel-reminder"],
+  allowedHeaders: ["Content-Type", "Authorization"],
 }));
 
 app.use(express.json());
@@ -80,7 +68,6 @@ app.use("/api/auth", authRoutes);
 app.use("/api/subjects", subjectRoutes);
 app.use("/api/pdfs", pdfRoutes);
 app.use("/api/chats", chatRoutes);
-app.use("/api/payment", paymentRoutes);
 
 // 404 handler
 app.use((req: Request, res: Response) => {

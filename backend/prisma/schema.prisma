@@ -1,3 +1,7 @@
+// This is your Prisma schema file
+// For more information about the Prisma schema file, see the documentation:
+// https://pris.ly/d/prisma-schema
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,99 +12,83 @@ datasource db {
 }
 
 model User {
-  id                    String    @id @default(cuid())
-  firebaseId            String    @unique
-  email                 String    @unique
-  displayName           String?
-  photoUrl              String?
-  stripeCustomerId      String?   @unique
-  stripeSubscriptionId  String?   @unique
-  subscriptionStatus   String?
-  subscriptionPlan     String?   @default("free")
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-  chats                 Chat[]
-  subjects              Subject[]
-  payments              Payment[]
+  id        String     @id @default(cuid())
+  firebaseId String    @unique // Firebase UID
+  email     String     @unique
+  displayName String?
+  photoUrl  String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  subjects  Subject[]
+  chats     Chat[]
 
   @@index([email])
   @@index([firebaseId])
-  @@index([stripeCustomerId])
-}
-
-model Payment {
-  id                String   @id @default(cuid())
-  userId            String
-  stripePaymentId   String   @unique
-  amount            Int
-  currency          String
-  status            String
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([stripePaymentId])
 }
 
 model Subject {
-  id          String   @id @default(cuid())
-  userId      String
-  name        String
+  id        String     @id @default(cuid())
+  userId    String
+  name      String     // e.g., "Physics", "Chemistry", "Math", etc.
   description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  chats       Chat[]
-  pdfs        PDF[]
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 
-  @@unique([userId, name])
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pdfs      PDF[]
+  chats     Chat[]
+
+  @@unique([userId, name]) // One subject name per user
   @@index([userId])
 }
 
 model PDF {
-  id               String     @id @default(cuid())
-  subjectId        String
-  userId           String
-  fileName         String
+  id        String     @id @default(cuid())
+  subjectId String
+  userId    String
+  fileName  String
   originalFileName String
-  fileSize         Int
-  fileUrl          String
-  extractedText    String?
-  pageCount        Int        @default(0)
-  createdAt        DateTime   @default(now())
-  updatedAt        DateTime   @updatedAt
-  subject          Subject    @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  chunks           PDFChunk[]
-  messages         Message[]  @relation("PDFMessages")
+  fileSize  Int
+  fileUrl   String     // Local path or S3 URL
+  extractedText String? // Full text extracted from PDF
+  pageCount Int        @default(0)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  subject   Subject    @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  chunks    PDFChunk[]
+  messages  Message[]  @relation("PDFMessages")
 
   @@index([subjectId])
   @@index([userId])
 }
 
 model PDFChunk {
-  id         String   @id @default(cuid())
-  pdfId      String
+  id        String     @id @default(cuid())
+  pdfId     String
   chunkIndex Int
-  text       String
-  tokens     Int
-  embedding  Json?
+  text      String     // Text chunk (~1000 tokens)
+  tokens    Int        // Number of tokens
+  embedding Json?      // Embedding vector stored as JSON array
   pageNumber Int?
-  createdAt  DateTime @default(now())
-  pdf        PDF      @relation(fields: [pdfId], references: [id], onDelete: Cascade)
+  createdAt DateTime   @default(now())
+
+  pdf       PDF        @relation(fields: [pdfId], references: [id], onDelete: Cascade)
 
   @@index([pdfId])
 }
 
 model Chat {
-  id        String    @id @default(cuid())
+  id        String     @id @default(cuid())
   userId    String
   subjectId String
-  title     String    @default("New Chat")
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  subject   Subject   @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String     @default("New Chat")
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject   Subject    @relation(fields: [subjectId], references: [id], onDelete: Cascade)
   messages  Message[]
 
   @@index([userId])
@@ -108,15 +96,16 @@ model Chat {
 }
 
 model Message {
-  id        String   @id @default(cuid())
+  id        String     @id @default(cuid())
   chatId    String
-  role      String
+  role      String     // "user" or "assistant"
   content   String
-  citations String?
-  pdfIds    String?
-  createdAt DateTime @default(now())
-  chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  pdfs      PDF[]    @relation("PDFMessages")
+  citations String?    // JSON stringified array of citations
+  pdfIds    String?    // Comma-separated PDF IDs used for this response
+  createdAt DateTime   @default(now())
+
+  chat      Chat       @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  pdfs      PDF[]      @relation("PDFMessages")
 
   @@index([chatId])
 }

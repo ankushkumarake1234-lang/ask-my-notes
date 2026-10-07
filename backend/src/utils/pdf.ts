@@ -62,31 +62,25 @@ export const generateEmbedding = async (text: string): Promise<number[]> => {
     if (openaiKey) {
       const resp = await axios.post(
         "https://api.openai.com/v1/embeddings",
-        { input: text, model: "text-embedding-3-small" },
+        { input: text, model: "text-embedding-3-large" },
         { headers: { Authorization: `Bearer ${openaiKey}` } }
       );
       return resp.data.data[0].embedding;
     }
 
     if (geminiKey) {
-      // Use gemini-embedding-001 (works across more api key tiers)
       const resp = await axios.post(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent?key=${geminiKey}`,
-        {
-          model: "models/gemini-embedding-001",
-          content: { parts: [{ text }] },
-        }
+        `https://generativelanguage.googleapis.com/v1beta/models/embed-text-bison-001:embedText?key=${geminiKey}`,
+        { text }
       );
-      // Response: { embedding: { values: [...] } }
-      if (resp.data?.embedding?.values?.length) {
-        return resp.data.embedding.values;
-      }
+      // The response format returns { embedding: [...] }
+      return resp.data.embedding || [];
     }
   } catch (err) {
     console.error("Embedding API error, falling back to mock:", err);
   }
 
-  // Fallback to mock embedding
+  // Fallback
   return generateMockEmbedding(text);
 };
 
@@ -96,12 +90,12 @@ export const generateMockEmbedding = (text: string): number[] => {
   // This is a mock embedding - in production use OpenAI API
   const words = text.toLowerCase().split(/\s+/);
   const embedding = new Array(768).fill(0); // 768-dim embedding
-
+  
   for (let i = 0; i < words.length; i++) {
     const wordHash = words[i].charCodeAt(0);
     embedding[i % 768] = (wordHash / 256) * 0.5 + (i / words.length) * 0.5;
   }
-
+  
   return embedding;
 };
 
@@ -120,7 +114,7 @@ export const calculateSimilarity = (vec1: number[], vec2: number[]): number => {
   norm2 = Math.sqrt(norm2);
 
   if (norm1 === 0 || norm2 === 0) return 0;
-
+  
   return dotProduct / (norm1 * norm2);
 };
 

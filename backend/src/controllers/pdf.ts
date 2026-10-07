@@ -4,11 +4,6 @@ import prisma from "@/lib/prisma";
 import { extractTextFromPDF, chunkText, generateEmbedding, cleanupFile } from "@/utils/pdf";
 import fs from "fs";
 import path from "path";
-import { fileURLToPath } from "url";
-
-// Compute __dirname for ESM
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 export const uploadPDF = async (req: AuthRequest, res: Response) => {
   try {
@@ -178,7 +173,7 @@ export const deletePDF = async (req: AuthRequest, res: Response) => {
 
     // Delete file from filesystem
     try {
-      const uploadDir = path.resolve(__dirname, "../../uploads");
+      const uploadDir = new URL("../../uploads", import.meta.url).pathname;
       const filePath = uploadDir + "/" + pdf.fileName;
       cleanupFile(filePath);
     } catch (e) {

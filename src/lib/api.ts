@@ -18,8 +18,6 @@ export const apiCall = async <T = any>(
 
   const defaultHeaders: Record<string, string> = {
     "Content-Type": "application/json",
-    "Bypass-Tunnel-Reminder": "true",
-    "bypass-tunnel-reminder": "true",
     ...headers,
   };
 
@@ -122,38 +120,14 @@ export const chatsAPI = {
   getMessages: (chatId: string) =>
     apiCall(`/chats/${chatId}/messages`),
 
-  ask: (chatId: string, question: string, level: string = "medium") =>
+  ask: (chatId: string, question: string) =>
     apiCall(`/chats/${chatId}/ask`, {
       method: "POST",
-      body: { question, level },
+      body: { question },
     }),
 
   delete: (chatId: string) =>
     apiCall(`/chats/${chatId}`, { method: "DELETE" }),
-
-  generateMCQ: (subjectId: string, count: number = 5, level: string = "medium") =>
-    apiCall(`/chats/mcq/${subjectId}?count=${count}&level=${level}`),
-
-  transcribe: (audioBlob: Blob) => {
-    const formData = new FormData();
-    formData.append("audio", audioBlob, "audio.webm");
-    return apiCall("/chats/transcribe", {
-      method: "POST",
-      body: formData,
-      headers: {},
-    });
-  },
-};
-
-// Payments API
-export const paymentsAPI = {
-  createCheckoutSession: (priceId: string) =>
-    apiCall("/payment/create-checkout-session", {
-      method: "POST",
-      body: { priceId },
-    }),
-
-  getStatus: () => apiCall("/payment/status"),
 };
 
 // Helper to save token
